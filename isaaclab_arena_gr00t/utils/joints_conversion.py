@@ -36,10 +36,11 @@ def _joint_name_to_policy_group(
         return None
 
     if tag == "NEW_EMBODIMENT":
-        if prefix == "left":
-            return "left_hand" if "hand" in joint_name else "left_arm"
-        if prefix == "right":
-            return "right_hand" if "hand" in joint_name else "right_arm"
+        # Dex3 hand joints have "hand" in their name. Other hands (e.g. Revo 2: left_thumb_metacarpal_joint) do not,
+        # so also accept a joint that the policy config lists in the matching hand group.
+        if prefix in ("left", "right"):
+            is_hand = "hand" in joint_name or joint_name in policy_joints_config.get(f"{prefix}_hand", [])
+            return f"{prefix}_hand" if is_hand else f"{prefix}_arm"
         if prefix == "waist":
             return "waist"
         return None
