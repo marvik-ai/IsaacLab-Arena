@@ -10,6 +10,14 @@ import isaaclab.utils.math as math_utils
 import warp as wp
 from isaaclab.assets import ArticulationData
 
+_PASSIVE_HAND_JOINT_MARKERS = ("_distal_joint", "_tip_joint", "_thumb_tip")
+"""Name fragments of Revo 2 hand joints that follow another joint (mimic) or are locked (tip)."""
+
+
+def is_passive_hand_joint(joint_name: str) -> bool:
+    """Whether a simulator joint is a passive (mimic or locked) hand joint that is not in the WBC joint order."""
+    return any(marker in joint_name for marker in _PASSIVE_HAND_JOINT_MARKERS)
+
 
 def convert_sim_joint_to_wbc_joint(
     sim_joint_data: np.ndarray, sim_joint_names: list[str], wbc_joints_order: dict[str, int]
@@ -34,6 +42,8 @@ def convert_sim_joint_to_wbc_joint(
 
     for sim_joint_name in sim_joint_names:
         sim_joint_index = sim_joint_names.index(sim_joint_name)
+        if sim_joint_name not in wbc_joints_order and is_passive_hand_joint(sim_joint_name):
+            continue
         assert sim_joint_name in wbc_joints_order, f"Joint {sim_joint_name} not found in loco_manip_g1_joints_order"
         wbc_joint_index = wbc_joints_order[sim_joint_name]
         wbc_joint_data[:, wbc_joint_index] = sim_joint_data[:, sim_joint_index]

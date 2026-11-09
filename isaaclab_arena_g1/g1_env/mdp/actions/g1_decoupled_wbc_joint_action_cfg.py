@@ -20,3 +20,6 @@ class G1DecoupledWBCJointActionCfg(ActionTermCfg):
     joint_names: list[str] = MISSING
 
     wbc_version: str = "homie_v2"
+
+    hand_type: str = "dex3"
+    """Hand model mounted on the G1: ``"dex3"`` (default, 43 joints) or ``"revo2"`` (BrainCo Revo 2)."""

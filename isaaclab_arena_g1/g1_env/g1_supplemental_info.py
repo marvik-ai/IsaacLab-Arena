@@ -268,6 +268,12 @@ class G1SupplementalInfo:
     default_joint_q: dict[str, float] = field(default_factory=lambda: {})
     elbow_calibration_joint_angles = {"left": 0.0, "right": 0.0}
 
+    # Optional hand postures (joint name -> radians, covering every hand actuated joint of both sides).
+    # When both are set, the WBC upper-body controller interpolates between them with the scalar hand
+    # command. When None, the controller falls back to the built-in Dex3 posture.
+    hand_open_posture: dict[str, float] | None = None
+    hand_closed_posture: dict[str, float] | None = None
+
 
 @dataclass
 class G1SupplementalInfoWaistUpperBody(G1SupplementalInfo):

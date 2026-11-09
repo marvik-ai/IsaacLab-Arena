@@ -20,6 +20,7 @@ class RobotModel:
         asset_path,
         set_floating_base=False,
         supplemental_info: G1SupplementalInfo | None = None,
+        joints_order_path: str | None = None,
     ):
         self.pinocchio_wrapper = pin.RobotWrapper.BuildFromURDF(
             filename=urdf_path,
@@ -29,7 +30,8 @@ class RobotModel:
 
         self.is_floating_base_model = set_floating_base
 
-        joints_order_path = os.path.join(os.path.dirname(__file__), "config/loco_manip_g1_joints_order_43dof.yaml")
+        if joints_order_path is None:
+            joints_order_path = os.path.join(os.path.dirname(__file__), "config/loco_manip_g1_joints_order_43dof.yaml")
 
         with open(joints_order_path) as f:
             self.wbc_g1_joints_order = yaml.safe_load(f)

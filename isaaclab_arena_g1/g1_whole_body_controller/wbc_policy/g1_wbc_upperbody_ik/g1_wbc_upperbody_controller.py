@@ -268,6 +268,24 @@ class G1WBCUpperbodyController:
             hand_q_desired[6] -= ampB
         return hand_q_desired
 
+    def get_side_hand_joint_pos(self, hand_state, side: str) -> np.ndarray:
+        """Hand joint targets for one side, ordered like ``supplemental_info.<side>_hand_actuated_joints``.
+
+        If the supplemental info defines open and closed postures (Revo 2), the scalar hand command is clipped
+        to [0, 1] and used to interpolate between them. Otherwise the Dex3 posture is used, with the sign
+        flip its right hand needs.
+        """
+        info = self.full_robot.supplemental_info
+        if info.hand_open_posture is None or info.hand_closed_posture is None:
+            joint_pos = self.get_hand_joint_pos(hand_state)
+            return joint_pos if side == "left" else -joint_pos
+
+        joint_names = getattr(info, f"{side}_hand_actuated_joints")
+        open_q = np.array([info.hand_open_posture[name] for name in joint_names])
+        closed_q = np.array([info.hand_closed_posture[name] for name in joint_names])
+        closure = float(np.clip(float(hand_state), 0.0, 1.0))
+        return (1.0 - closure) * open_q + closure * closed_q
+
     def inverse_kinematics(
         self,
         body_target_pose,
@@ -289,8 +307,8 @@ class G1WBCUpperbodyController:
         else:
             body_q = self.body_ik_solver(body_target_pose)
 
-        left_hand_joint_pos = self.get_hand_joint_pos(left_hand_state)
-        right_hand_joint_pos = -self.get_hand_joint_pos(right_hand_state)
+        left_hand_joint_pos = self.get_side_hand_joint_pos(left_hand_state, "left")
+        right_hand_joint_pos = self.get_side_hand_joint_pos(right_hand_state, "right")
 
         body_q[self.full_robot.get_hand_actuated_joint_indices(side="left")] = left_hand_joint_pos
         body_q[self.full_robot.get_hand_actuated_joint_indices(side="right")] = right_hand_joint_pos

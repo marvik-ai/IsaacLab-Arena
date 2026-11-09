@@ -6,9 +6,7 @@
 from __future__ import annotations
 
 import numpy as np
-import os
 import torch
-import yaml
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -53,6 +51,10 @@ class G1DecoupledWBCJointAction(ActionTerm):
         """
         super().__init__(cfg, env)
 
+        # Number of joint targets at the start of the action vector. Dex3 keeps the historical constant;
+        # other hands take it from the articulation, which also contains the hand's passive (mimic) joints.
+        self._joint_count = G1_NUM_JOINTS if cfg.hand_type == "dex3" else self._asset.num_joints
+
         self._raw_actions = torch.zeros(self.num_envs, self.action_dim, device=self.device)
 
         # resolve the joints over which the action term is applied
@@ -76,7 +78,7 @@ class G1DecoupledWBCJointAction(ActionTerm):
             raise ValueError(f"Invalid WBC version: {self._wbc_version}")
 
         waist_location = "lower_and_upper_body" if wbc_config.enable_waist else "lower_body"
-        self.robot_model = instantiate_g1_robot_model(waist_location=waist_location)
+        self.robot_model = instantiate_g1_robot_model(waist_location=waist_location, hand_type=self.cfg.hand_type)
 
         self.wbc_policy = get_wbc_policy("g1", self.robot_model, wbc_config, self.num_envs)
 
@@ -90,22 +92,15 @@ class G1DecoupledWBCJointAction(ActionTerm):
             # roll pitch yaw command
             "torso_orientation_rpy_cmd": np.tile(np.array([[0.0, 0.0, 0.0]]), (self.num_envs, 1)),
         }
-        wbc_g1_joints_order_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-            "config/loco_manip_g1_joints_order_43dof.yaml",
-        )
-        try:
-            with open(wbc_g1_joints_order_path) as f:
-                self.wbc_g1_joints_order = yaml.safe_load(f)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"File not found: {wbc_g1_joints_order_path}")
+        # The robot model loads the joint order that matches its hand type (same file as before for Dex3).
+        self.wbc_g1_joints_order = self.robot_model.wbc_g1_joints_order
 
     # Properties.
     # """
     @property
     def num_joints(self) -> int:
         """Get the number of joints."""
-        return G1_NUM_JOINTS
+        return self._joint_count
 
     @property
     def navigate_cmd_dim(self) -> int:
@@ -125,7 +120,7 @@ class G1DecoupledWBCJointAction(ActionTerm):
     @property
     def action_dim(self) -> int:
         """Dimension of the action space (based on number of tasks and pose dimension)."""
-        return G1_NUM_JOINTS + NUM_NAVIGATE_CMD + NUM_BASE_HEIGHT_CMD + NUM_TORSO_ORIENTATION_RPY_CMD
+        return self._joint_count + NUM_NAVIGATE_CMD + NUM_BASE_HEIGHT_CMD + NUM_TORSO_ORIENTATION_RPY_CMD
 
     @property
     def raw_actions(self) -> torch.Tensor:
