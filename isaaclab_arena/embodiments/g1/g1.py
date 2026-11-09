@@ -62,6 +62,9 @@ class G1EmbodimentBase(EmbodimentBase):
         self.scene_config = G1SceneCfg()
         self.camera_config = G1CameraCfg()
         self.camera_config._link_prim_prefix = self.link_prim_prefix
+        if self.link_prim_prefix:
+            # __post_init__ already ran at construction and built the camera with the default prim path.
+            self.camera_config.__post_init__()
         self.action_config = MISSING
         self.observation_config = MISSING
         self.event_config = MISSING
