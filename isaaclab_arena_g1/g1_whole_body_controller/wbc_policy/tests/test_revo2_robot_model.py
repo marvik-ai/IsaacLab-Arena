@@ -14,8 +14,10 @@ import pytest
 
 from isaaclab_arena_g1.g1_env.g1_revo2_supplemental_info import G1Revo2SupplementalInfo
 from isaaclab_arena_g1.g1_env.g1_supplemental_info import G1SupplementalInfo
+from isaaclab_arena_g1.g1_whole_body_controller.wbc_policy.utils.revo2_coupling import distal_hand_joint_couplings
 from isaaclab_arena_g1.g1_whole_body_controller.wbc_policy.utils.revo2_urdf import (
     build_pinocchio_urdf,
+    build_sim_urdf,
     check_joint_order,
 )
 
@@ -92,6 +94,39 @@ def test_build_pinocchio_urdf_fixes_mimic_and_locked_joints(tmp_path):
     assert 'type="fixed"' in text and "<mimic" not in text
     # Mesh paths are rewritten so the copy can live anywhere.
     assert str(src.parent / "meshes" / "prox.STL") in text
+
+
+def test_build_sim_urdf_keeps_mimic_joints_and_uses_relative_meshes(tmp_path):
+    src = tmp_path / "src" / "robot.urdf"
+    src.parent.mkdir()
+    src.write_text(_SYNTHETIC_URDF)
+    dst = tmp_path / "src" / "robot_sim.urdf"
+
+    movable = build_sim_urdf(str(src), str(dst))
+
+    # The mimic distal joint stays (PhysX couples it); the locked tip joint is fixed.
+    assert movable == ["finger_proximal_joint", "finger_distal_joint"]
+    text = dst.read_text()
+    assert "<mimic" in text
+    assert 'filename="meshes/prox.STL"' in text
+
+
+def test_distal_joints_follow_their_proximal_joint():
+    names = ["torso", "left_index_proximal_joint", "left_index_distal_joint", "right_thumb_distal_joint"]
+    names.append("right_thumb_proximal_joint")
+
+    couplings = distal_hand_joint_couplings(names)
+
+    assert couplings == [(2, 1, 1.155), (3, 4, 1.0)]
+
+
+def test_hands_without_distal_joints_have_no_couplings():
+    assert distal_hand_joint_couplings(["left_hand_thumb_0_joint", "left_hand_index_1_joint"]) == []
+
+
+def test_distal_joint_without_proximal_joint_is_an_error():
+    with pytest.raises(ValueError, match="no matching proximal joint"):
+        distal_hand_joint_couplings(["left_index_distal_joint"])
 
 
 def test_check_joint_order_reports_mismatch():

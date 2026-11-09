@@ -10,12 +10,17 @@ import isaaclab.utils.math as math_utils
 import warp as wp
 from isaaclab.assets import ArticulationData
 
+from isaaclab_arena_g1.g1_whole_body_controller.wbc_policy.utils.revo2_coupling import distal_hand_joint_couplings
+
 _PASSIVE_HAND_JOINT_MARKERS = ("_distal_joint", "_tip_joint", "_thumb_tip")
-"""Name fragments of Revo 2 hand joints that follow another joint (mimic) or are locked (tip)."""
+"""Name fragments of Revo 2 hand joints that follow another joint (distal) or are locked (tip)."""
 
 
 def is_passive_hand_joint(joint_name: str) -> bool:
-    """Whether a simulator joint is a passive (mimic or locked) hand joint that is not in the WBC joint order."""
+    """Whether a simulator hand joint follows another joint or is locked, so it is not in the WBC joint order.
+
+    Distal joints are still commanded: ``postprocess_actions`` sets them from their proximal joint.
+    """
     return any(marker in joint_name for marker in _PASSIVE_HAND_JOINT_MARKERS)
 
 
@@ -75,7 +80,9 @@ def prepare_observations(
     sim_joint_pos = wp.to_torch(robot_data.joint_pos).cpu().numpy()
     sim_joint_vel = wp.to_torch(robot_data.joint_vel).cpu().numpy()
     sim_default_joint_pos = wp.to_torch(robot_data.default_joint_pos).cpu().numpy()
-    num_joints = len(robot_data.joint_names)
+    # The WBC observation has one column per joint in the WBC joint order. For Dex3 that equals the simulator joint
+    # count; for Revo 2 the simulator also has passive distal joints that the WBC does not see.
+    num_joints = len(wbc_joints_order)
 
     # Convert joints data from Lab's order to GR00T's order saved in config yaml
     wbc_joint_pos = np.zeros((num_envs, num_joints))
@@ -148,4 +155,7 @@ def postprocess_actions(
             continue
         sim_joint_index = robot_data.joint_names.index(wbc_joint_name)
         processed_actions[:, sim_joint_index] = wbc_joints_pos_action[:, wbc_joint_index]
+    # Hand joints that are not in the WBC joint order (Revo 2 distal joints) follow their proximal joint.
+    for distal_index, proximal_index, multiplier in distal_hand_joint_couplings(robot_data.joint_names):
+        processed_actions[:, distal_index] = multiplier * processed_actions[:, proximal_index]
     return processed_actions
