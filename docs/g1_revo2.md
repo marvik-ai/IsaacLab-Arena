@@ -67,6 +67,10 @@ Optional: robot self-collisions are on for the Revo 2 embodiments, so the thumb 
 (the Dex3 robot runs with them off). `export ARENA_G1_REVO2_SELF_COLLISIONS=0` turns them off again, for example if the
 arms jitter against the torso.
 
+With self-collisions on, the thumb is filtered against everything except the fingers of the same hand.
+`export ARENA_G1_REVO2_THUMB_FINGER_COLLISIONS=0` filters the thumb against the fingers too (finger-to-finger
+collisions stay on), which is the way out if the thumb cannot close past the index finger.
+
 ## 4. Smoke test (inside the container)
 
 ```bash

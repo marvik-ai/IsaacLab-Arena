@@ -101,9 +101,13 @@ def filter_revo2_thumb_palm_collisions(env: ManagerBasedEnv, env_ids: torch.Tens
     finger).
     """
     del env_ids
+    import os
+
     from pxr import Usd, UsdPhysics
 
     finger_markers = ("_index_", "_middle_", "_ring_", "_pinky_")
+    if os.environ.get("ARENA_G1_REVO2_THUMB_FINGER_COLLISIONS", "1") == "0":
+        finger_markers = ()  # filter the thumb against the fingers too
     filtered_count = 0
     for env_prim_path in env.scene.env_prim_paths:
         robot_prim_path = f"{env_prim_path}/Robot"
