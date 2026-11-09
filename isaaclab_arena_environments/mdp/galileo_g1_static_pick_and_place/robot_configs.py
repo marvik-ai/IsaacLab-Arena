@@ -24,4 +24,7 @@ G1_STATIC_FINGER_PRIM_NAME_MARKERS: tuple[str, ...] = (
     "thumb",
     "index",
     "middle",
+    # Revo 2 hands also have ring and pinky fingers. The underscores keep these from matching other prim names.
+    "_ring_",
+    "_pinky_",
 )

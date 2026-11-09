@@ -10,6 +10,8 @@ import warnings
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
+from isaaclab_arena_g1.g1_env.mdp.usd_instancing import deinstance_matching_prims
+
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
 
@@ -60,6 +62,9 @@ def apply_high_friction_to_g1_fingers(
     bound_count = 0
     for env_prim_path in env.scene.env_prim_paths:
         robot_prim_path = f"{env_prim_path}/Robot"
+        # Instanced links (e.g. the Revo 2 USD) hide their collision prims in instance proxies, which the
+        # traversal below skips and where no material can be bound. No-op for assets that are not instanced.
+        deinstance_matching_prims(stage, robot_prim_path, prim_name_markers)
         for prim in stage.Traverse():
             prim_path = str(prim.GetPath())
             if not prim_path.startswith(robot_prim_path):
