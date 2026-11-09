@@ -36,6 +36,8 @@ from isaaclab_arena.embodiments.g1.g1 import (
 from isaaclab_arena.utils.pose import Pose
 
 REVO2_USD_ENV_VAR = "ARENA_G1_REVO2_USD"
+# Set to 0 to turn robot self-collisions off again (the Dex3 robot runs without them).
+REVO2_SELF_COLLISIONS_ENV_VAR = "ARENA_G1_REVO2_SELF_COLLISIONS"
 
 
 def _make_g1_revo2_agile_cfg() -> ArticulationCfg:
@@ -97,6 +99,10 @@ def _set_revo2_usd_path(scene_config: G1Revo2AgileSceneCfg) -> None:
             f"that is visible from where this runs (inside the container if you use Docker); got {usd_path!r}."
         )
     scene_config.robot.spawn.usd_path = usd_path
+    # Fingers and thumb must collide with each other. PhysX still skips the pairs of directly jointed links.
+    scene_config.robot.spawn.articulation_props.enabled_self_collisions = (
+        os.environ.get(REVO2_SELF_COLLISIONS_ENV_VAR, "1") != "0"
+    )
 
 
 @register_asset

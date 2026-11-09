@@ -63,6 +63,10 @@ export ARENA_G1_REVO2_URDF=$HOME/.cache/isaaclab_arena/g1_revo2/asset/g1_29dof_m
 `ARENA_G1_REVO2_URDF` is the original combined URDF. The whole-body controller derives its own Pinocchio copy from it
 (mimic and tip joints fixed) under `~/.cache/isaaclab_arena/g1_revo2/`.
 
+Optional: robot self-collisions are on for the Revo 2 embodiments, so the thumb and fingers collide with each other
+(the Dex3 robot runs with them off). `export ARENA_G1_REVO2_SELF_COLLISIONS=0` turns them off again, for example if the
+arms jitter against the torso.
+
 ## 4. Smoke test (inside the container)
 
 ```bash
