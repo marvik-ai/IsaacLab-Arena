@@ -91,3 +91,47 @@ def apply_high_friction_to_g1_fingers(
             "G1 hand friction may be unchanged.",
             stacklevel=1,
         )
+
+
+def filter_revo2_thumb_palm_collisions(env: ManagerBasedEnv, env_ids: torch.Tensor) -> None:
+    """Keep the Revo 2 thumbs from colliding with anything except the fingers of the same hand.
+
+    With robot self-collisions on, the thumb sweeps into the palm and wrist links and stops. Filtering those pairs
+    leaves the thumb-to-finger contact, which is the one that matters (the thumb must not pass through the index
+    finger).
+    """
+    del env_ids
+    from pxr import Usd, UsdPhysics
+
+    finger_markers = ("_index_", "_middle_", "_ring_", "_pinky_")
+    filtered_count = 0
+    for env_prim_path in env.scene.env_prim_paths:
+        robot_prim_path = f"{env_prim_path}/Robot"
+        robot_prim = env.sim.stage.GetPrimAtPath(robot_prim_path)
+        bodies = [
+            prim
+            for prim in Usd.PrimRange(robot_prim)
+            if not prim.IsInstanceProxy() and "PhysicsRigidBodyAPI" in set(prim.GetAppliedSchemas())
+        ]
+        for side in ("left", "right"):
+            thumbs = [p for p in bodies if f"{side}_thumb_" in p.GetName().lower()]
+            # Same-hand finger links stay collidable with the thumb.
+            keep_paths = {
+                p.GetPath()
+                for p in bodies
+                if p.GetName().lower().startswith(side) and any(m in p.GetName().lower() for m in finger_markers)
+            }
+            for thumb in thumbs:
+                targets = [p.GetPath() for p in bodies if p != thumb and p.GetPath() not in keep_paths]
+                if not targets:
+                    continue
+                filtered_pairs = UsdPhysics.FilteredPairsAPI.Apply(thumb).CreateFilteredPairsRel()
+                for target in targets:
+                    filtered_pairs.AddTarget(target)
+                filtered_count += len(targets)
+
+    if filtered_count == 0:
+        warnings.warn(
+            "filter_revo2_thumb_palm_collisions: no thumb rigid bodies were found; thumb self-collisions unchanged.",
+            stacklevel=1,
+        )

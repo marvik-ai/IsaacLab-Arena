@@ -13,6 +13,7 @@ import os
 
 from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.assets.articulation.articulation_cfg import ArticulationCfg
+from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.utils import configclass
 
 import isaaclab_arena_g1.g1_env.g1_revo2_constants as revo2
@@ -34,6 +35,7 @@ from isaaclab_arena.embodiments.g1.g1 import (
     _remove_waist_from_pink_ik_action_config,
 )
 from isaaclab_arena.utils.pose import Pose
+from isaaclab_arena_g1.g1_env.mdp import g1_events as g1_events_mdp
 
 REVO2_USD_ENV_VAR = "ARENA_G1_REVO2_USD"
 # Set to 0 to turn robot self-collisions off again (the Dex3 robot runs without them).
@@ -91,6 +93,15 @@ class G1Revo2AgileSceneCfg(G1SceneCfg):
     robot: ArticulationCfg = G1_REVO2_AGILE_CFG.copy()
 
 
+def _filter_thumb_palm_collisions(event_config) -> None:
+    """Keep the thumbs from catching on the palm while self-collisions are on (see the event for details)."""
+    if os.environ.get(REVO2_SELF_COLLISIONS_ENV_VAR, "1") == "0":
+        return
+    event_config.filter_thumb_palm_collisions = EventTerm(
+        func=g1_events_mdp.filter_revo2_thumb_palm_collisions, mode="prestartup"
+    )
+
+
 def _set_revo2_usd_path(scene_config: G1Revo2AgileSceneCfg) -> None:
     usd_path = os.environ.get(REVO2_USD_ENV_VAR)
     if not usd_path or not os.path.isfile(usd_path):
@@ -132,6 +143,7 @@ class G1Revo2WBCAgilePinkEmbodiment(G1EmbodimentBase):
         self.observation_config.wbc.concatenate_terms = self.concatenate_observation_terms
         self.observation_config.action.concatenate_terms = self.concatenate_observation_terms
         self.event_config = G1WBCPinkEventCfg()
+        _filter_thumb_palm_collisions(self.event_config)
         self.camera_config._is_tiled_camera = use_tiled_camera
         self.camera_config._camera_offset = camera_offset
 
@@ -160,5 +172,6 @@ class G1Revo2WBCAgileJointEmbodiment(G1EmbodimentBase):
         self.observation_config.policy.concatenate_terms = self.concatenate_observation_terms
         self.observation_config.wbc.concatenate_terms = self.concatenate_observation_terms
         self.event_config = G1WBCJointEventCfg()
+        _filter_thumb_palm_collisions(self.event_config)
         self.camera_config._is_tiled_camera = use_tiled_camera
         self.camera_config._camera_offset = camera_offset
