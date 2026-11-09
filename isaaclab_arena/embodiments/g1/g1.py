@@ -826,6 +826,7 @@ class G1WBCJointEventCfg:
     reset_all = EventTerm(func=reset_all_articulation_joints, mode="reset")
     reset_wbc_policy = EventTerm(func=g1_events_mdp.reset_decoupled_wbc_joint_policy, mode="reset")
     apply_high_friction_to_g1_fingers: EventTerm | None = None
+    filter_thumb_palm_collisions: EventTerm | None = None  # set by the Revo 2 embodiments
 
 
 @configclass
@@ -835,6 +836,7 @@ class G1WBCPinkEventCfg:
     reset_all = EventTerm(func=reset_all_articulation_joints, mode="reset")
     reset_wbc_policy = EventTerm(func=g1_events_mdp.reset_decoupled_wbc_pink_policy, mode="reset")
     apply_high_friction_to_g1_fingers: EventTerm | None = None
+    filter_thumb_palm_collisions: EventTerm | None = None  # set by the Revo 2 embodiments
 
 
 class G1MimicEnv(ManagerBasedRLMimicEnv):
