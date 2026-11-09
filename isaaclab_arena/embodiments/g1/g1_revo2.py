@@ -104,6 +104,7 @@ class G1Revo2WBCAgilePinkEmbodiment(G1EmbodimentBase):
     """G1 with Revo 2 hands, AGILE WBC and Pink IK upper-body control (teleoperation and data recording)."""
 
     name = "g1_revo2_wbc_agile_pink"
+    link_prim_prefix = "Geometry/"
 
     def __init__(
         self,
@@ -134,6 +135,7 @@ class G1Revo2WBCAgileJointEmbodiment(G1EmbodimentBase):
     """G1 with Revo 2 hands, AGILE WBC and direct joint upper-body control (replay and GR00T closed loop)."""
 
     name = "g1_revo2_wbc_agile_joint"
+    link_prim_prefix = "Geometry/"
 
     def __init__(
         self,

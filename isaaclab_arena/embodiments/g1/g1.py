@@ -47,6 +47,9 @@ class G1EmbodimentBase(EmbodimentBase):
     name = "g1"
     default_arm_mode = ArmMode.DUAL_ARM
 
+    # Prim path of the links below the robot root. USDs from the URDF converter nest links under "Geometry/".
+    link_prim_prefix: str = ""
+
     def __init__(
         self,
         enable_cameras: bool = False,
@@ -58,6 +61,7 @@ class G1EmbodimentBase(EmbodimentBase):
         # Configuration structs
         self.scene_config = G1SceneCfg()
         self.camera_config = G1CameraCfg()
+        self.camera_config._link_prim_prefix = self.link_prim_prefix
         self.action_config = MISSING
         self.observation_config = MISSING
         self.event_config = MISSING
@@ -68,14 +72,14 @@ class G1EmbodimentBase(EmbodimentBase):
         self.xr: XrCfg = XrCfg(
             anchor_pos=(0.0, 0.0, -1.0),
             anchor_rot=(0.0, 0.0, -0.70711, 0.70711),
-            anchor_prim_path="/World/envs/env_0/Robot/pelvis",
+            anchor_prim_path=self.get_teleop_target_frame_prim_path(),
             anchor_rotation_mode=XrAnchorRotationMode.FOLLOW_PRIM_SMOOTHED,
             fixed_anchor_height=True,
         )
 
     def get_teleop_target_frame_prim_path(self) -> str | None:
         """Pelvis prim path so OpenXR teleop poses are rebased into robot base frame for IK."""
-        return "/World/envs/env_0/Robot/pelvis"
+        return f"/World/envs/env_0/Robot/{self.link_prim_prefix}pelvis"
 
     def set_finger_contact_friction(
         self,
@@ -519,8 +523,10 @@ class G1CameraCfg:
         CameraClass = TiledCameraCfg if is_tiled_camera else CameraCfg
         OffsetClass = CameraClass.OffsetCfg
 
+        link_prefix = getattr(self, "_link_prim_prefix", "")
+        head_link_path = "pelvis/waist_yaw_link/waist_roll_link/torso_link/head_link" if link_prefix else "head_link"
         common_kwargs = dict(
-            prim_path="{ENV_REGEX_NS}/Robot/head_link/RobotHeadCam",
+            prim_path=f"{{ENV_REGEX_NS}}/Robot/{link_prefix}{head_link_path}/RobotHeadCam",
             update_period=0.0,
             height=480,
             width=640,
