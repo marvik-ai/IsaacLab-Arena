@@ -48,7 +48,8 @@ def _make_g1_revo2_agile_cfg() -> ArticulationCfg:
     Hand gains follow the values tuned for these hands in the ``g1-apple-rl`` project: implicit PD with low
     stiffness and effort limits of 0.5 / 1.1 / 2.0 Nm for the thumb metacarpal / thumb proximal / finger proximal
     joints. The distal joints get the same gains as their proximal joint: the USD converter leaves them uncoupled
-    in PhysX, so the whole-body controller commands them as ``multiplier * proximal`` (see ``revo2_coupling``).
+    in PhysX, so the whole-body controller commands them as ``multiplier * measured proximal position`` (see
+    ``revo2_coupling``).
     """
     cfg = G1_AGILE_CFG.copy()
     cfg.actuators["hands"] = ImplicitActuatorCfg(

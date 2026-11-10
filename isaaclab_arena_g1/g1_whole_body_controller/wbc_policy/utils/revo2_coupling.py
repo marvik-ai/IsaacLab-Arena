@@ -7,7 +7,8 @@
 
 The URDF declares each ``*_distal_joint`` as a mimic of the matching ``*_proximal_joint``. The USD converter only
 records that for the Newton backend and removes it from the PhysX layer, so PhysX does not couple the joints. The
-whole-body controller therefore commands the distal joints itself: ``distal_target = multiplier * proximal_target``.
+whole-body controller therefore commands the distal joints itself: ``distal_target = multiplier * proximal_position``,
+using the measured proximal position so that a blocked proximal joint is not pushed back by its distal drive.
 """
 
 import isaaclab_arena_g1.g1_env.g1_revo2_constants as revo2

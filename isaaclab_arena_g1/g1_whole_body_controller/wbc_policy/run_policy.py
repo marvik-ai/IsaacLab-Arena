@@ -19,7 +19,8 @@ _PASSIVE_HAND_JOINT_MARKERS = ("_distal_joint", "_tip_joint", "_thumb_tip")
 def is_passive_hand_joint(joint_name: str) -> bool:
     """Whether a simulator hand joint follows another joint or is locked, so it is not in the WBC joint order.
 
-    Distal joints are still commanded: ``postprocess_actions`` sets them from their proximal joint.
+    Distal joints are still commanded: ``postprocess_actions`` sets them from the measured position of their
+    proximal joint.
     """
     return any(marker in joint_name for marker in _PASSIVE_HAND_JOINT_MARKERS)
 
@@ -156,6 +157,10 @@ def postprocess_actions(
         sim_joint_index = robot_data.joint_names.index(wbc_joint_name)
         processed_actions[:, sim_joint_index] = wbc_joints_pos_action[:, wbc_joint_index]
     # Hand joints that are not in the WBC joint order (Revo 2 distal joints) follow their proximal joint.
+    # Revo 2 distal joints are not coupled in PhysX, so each one is driven to follow where its proximal joint actually
+    # is (not where it is commanded to go). A proximal joint that is blocked by the object then does not get pushed
+    # back past its limit by its own distal drive.
+    measured = wp.to_torch(robot_data.joint_pos).to(device)
     for distal_index, proximal_index, multiplier in distal_hand_joint_couplings(robot_data.joint_names):
-        processed_actions[:, distal_index] = multiplier * processed_actions[:, proximal_index]
+        processed_actions[:, distal_index] = multiplier * measured[:, proximal_index].clamp(min=0.0)
     return processed_actions
