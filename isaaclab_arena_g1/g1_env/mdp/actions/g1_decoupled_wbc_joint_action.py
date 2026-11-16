@@ -27,6 +27,7 @@ from isaaclab_arena_g1.g1_whole_body_controller.wbc_policy.run_policy import (
     prepare_observations,
 )
 from isaaclab_arena_g1.g1_whole_body_controller.wbc_policy.utils.g1 import instantiate_g1_robot_model
+from isaaclab_arena_g1.g1_whole_body_controller.wbc_policy.utils.revo2_distal_coupler import create_revo2_distal_coupler
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
@@ -50,6 +51,7 @@ class G1DecoupledWBCJointAction(ActionTerm):
             env: The environment in which the action term will be applied.
         """
         super().__init__(cfg, env)
+        self._distal_coupler = create_revo2_distal_coupler(self._asset.joint_names, self.device)
 
         # Number of joint targets at the start of the action vector. Dex3 keeps the historical constant;
         # other hands take it from the articulation, which also contains the hand's passive (mimic) joints.
@@ -228,6 +230,8 @@ class G1DecoupledWBCJointAction(ActionTerm):
     def apply_actions(self):
         """Apply the computed joint positions based on the WBC solution."""
         self._asset.set_joint_position_target(self._processed_actions, self._joint_ids)
+        if self._distal_coupler is not None:
+            self._distal_coupler.apply(self._asset)
 
     def reset(self, env_ids: Sequence[int] | None = None) -> None:
         """Reset the action term for specified environments.

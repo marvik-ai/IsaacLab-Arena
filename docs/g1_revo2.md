@@ -11,7 +11,12 @@ locked. The whole-body controller therefore sees 41 joints (29 body + 12 hand), 
 
 The USD converter records the mimic relation only for the Newton backend and removes it from the PhysX layer, so
 PhysX does not couple the distal joints. The whole-body controller drives them instead, with
-`distal_target = multiplier * proximal_target` (1.155 for the fingers, 1.0 for the thumb).
+`distal_target = multiplier * proximal_position` (1.155 for the fingers, 1.0 for the thumb), and the action terms then
+enforce `q_distal = multiplier * q_proximal` on every physics step (`revo2_distal_coupler.py`), so a fingertip pressed
+against the apple cannot straighten the distal joint relative to the proximal one. The proximal joint stays in charge.
+The coupling is a position override: it does not pass a load on the fingertip to the proximal drive. Set
+`ARENA_G1_REVO2_DISTAL_KINEMATIC=0` to turn it off. Record and evaluate with the same setting, since the policy never
+sees the distal joints.
 
 ## 1. Prepare the asset (host, no container)
 

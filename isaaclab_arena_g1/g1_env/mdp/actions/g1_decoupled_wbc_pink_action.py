@@ -404,6 +404,8 @@ class G1DecoupledWBCPinkAction(G1DecoupledWBCJointAction):
     def apply_actions(self):
         """Apply the computed joint positions based on the WBC solution."""
         self._asset.set_joint_position_target(self._processed_actions, self._joint_ids)
+        if self._distal_coupler is not None:
+            self._distal_coupler.apply(self._asset)
 
     def reset(self, env_ids: Sequence[int] | None = None) -> None:
         """Reset the action term for specified environments.
