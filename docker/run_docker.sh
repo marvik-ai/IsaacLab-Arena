@@ -119,7 +119,6 @@ if [ "$( docker container inspect -f '{{.State.Running}}' $DOCKER_IMAGE_NAME'-'$
   docker exec -it $DOCKER_IMAGE_NAME-$DOCKER_VERSION_TAG su $(id -un)
 else
     DOCKER_RUN_ARGS=("--name" "$DOCKER_IMAGE_NAME-$DOCKER_VERSION_TAG"
-                    "--privileged"
                     "--ulimit" "memlock=-1"
                     "--ulimit" "stack=-1"
                     "--ipc=host"
@@ -174,8 +173,41 @@ else
     if [ "$INSTALL_GROOT" = "true" ]; then
         DOCKER_RUN_ARGS+=("-v" "./submodules/Isaac-GR00T:${WORKDIR}/submodules/Isaac-GR00T")
     fi
+    # Optionally run on a bridge network so CloudXR's fixed ports (49100/tcp, 47998/udp)
+    # don't clash with other Isaac Sim livestreams on a shared host. Set both
+    # CXR_BRIDGE_PROXY_PORT (host TCP -> WSS proxy 48322) and CXR_BRIDGE_MEDIA_PORT
+    # (host UDP -> media 47998); then set Media Address/Port in the Isaac Teleop client.
+    # Likewise, set both LIVESTREAM_SIGNAL_PORT and LIVESTREAM_STREAM_PORT to publish ports for the
+    # Isaac Sim WebRTC livestream. They are published 1:1 (WebRTC advertises the port it listens on),
+    # so launch with --livestream 2 and pass matching signalPort/streamPort/publicIp via --kit_args.
+    USE_BRIDGE=false
+    if [ -n "$CXR_BRIDGE_PROXY_PORT" ] && [ -n "$CXR_BRIDGE_MEDIA_PORT" ]; then
+        USE_BRIDGE=true
+        DOCKER_RUN_ARGS+=("-p" "${CXR_BRIDGE_PROXY_PORT}:48322/tcp")
+        DOCKER_RUN_ARGS+=("-p" "${CXR_BRIDGE_MEDIA_PORT}:47998/udp")
+        echo "Bridge network: CloudXR proxy ${CXR_BRIDGE_PROXY_PORT}/tcp, media ${CXR_BRIDGE_MEDIA_PORT}/udp"
+    fi
+    if [ -n "$LIVESTREAM_SIGNAL_PORT" ] && [ -n "$LIVESTREAM_STREAM_PORT" ]; then
+        USE_BRIDGE=true
+        DOCKER_RUN_ARGS+=("-p" "${LIVESTREAM_SIGNAL_PORT}:${LIVESTREAM_SIGNAL_PORT}/tcp")
+        DOCKER_RUN_ARGS+=("-p" "${LIVESTREAM_STREAM_PORT}:${LIVESTREAM_STREAM_PORT}/udp")
+        echo "Bridge network: livestream signal ${LIVESTREAM_SIGNAL_PORT}/tcp, stream ${LIVESTREAM_STREAM_PORT}/udp"
+    fi
+    if [ "$USE_BRIDGE" = true ]; then
+        for i in "${!DOCKER_RUN_ARGS[@]}"; do
+            [ "${DOCKER_RUN_ARGS[$i]}" = "--net=host" ] && unset 'DOCKER_RUN_ARGS[i]'
+        done
+    fi
+    # Optionally restrict the container to specific GPUs (e.g. ARENA_GPUS=0) on shared hosts.
+    if [ -n "$ARENA_GPUS" ]; then
+        for i in "${!DOCKER_RUN_ARGS[@]}"; do
+            [ "${DOCKER_RUN_ARGS[$i]}" = "--gpus=all" ] && DOCKER_RUN_ARGS[i]="--gpus=\"device=${ARENA_GPUS}\""
+        done
+        # --privileged still exposes every /dev/nvidia*, so also pin CUDA explicitly.
+        echo "Restricting container to GPU(s): ${ARENA_GPUS}"
+    fi
     # Allow X11 connections
-    xhost +local:docker > /dev/null
+    [ -n "$DISPLAY" ] && xhost +local:docker > /dev/null || true
 
     docker run "${DOCKER_RUN_ARGS[@]}" --interactive --rm --tty ${DOCKER_IMAGE_NAME}:${DOCKER_VERSION_TAG} "${@}"
 fi
