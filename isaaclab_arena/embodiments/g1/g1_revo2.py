@@ -38,7 +38,8 @@ from isaaclab_arena.utils.pose import Pose
 from isaaclab_arena_g1.g1_env.mdp import g1_events as g1_events_mdp
 
 REVO2_USD_ENV_VAR = "ARENA_G1_REVO2_USD"
-# Set to 0 to turn robot self-collisions off again (the Dex3 robot runs without them).
+# Set to 1 to turn robot self-collisions on. They are off by default, as for the Dex3 robot: with them on, the GPU
+# solver lets the robot fall over when the arms move.
 REVO2_SELF_COLLISIONS_ENV_VAR = "ARENA_G1_REVO2_SELF_COLLISIONS"
 
 
@@ -96,7 +97,7 @@ class G1Revo2AgileSceneCfg(G1SceneCfg):
 
 def _filter_thumb_palm_collisions(event_config) -> None:
     """Keep the thumbs from catching on the palm while self-collisions are on (see the event for details)."""
-    if os.environ.get(REVO2_SELF_COLLISIONS_ENV_VAR, "1") == "0":
+    if os.environ.get(REVO2_SELF_COLLISIONS_ENV_VAR, "0") == "0":
         return
     event_config.filter_thumb_palm_collisions = EventTerm(
         func=g1_events_mdp.filter_revo2_thumb_palm_collisions, mode="prestartup"
@@ -113,7 +114,7 @@ def _set_revo2_usd_path(scene_config: G1Revo2AgileSceneCfg) -> None:
     scene_config.robot.spawn.usd_path = usd_path
     # Fingers and thumb must collide with each other. PhysX still skips the pairs of directly jointed links.
     scene_config.robot.spawn.articulation_props.enabled_self_collisions = (
-        os.environ.get(REVO2_SELF_COLLISIONS_ENV_VAR, "1") != "0"
+        os.environ.get(REVO2_SELF_COLLISIONS_ENV_VAR, "0") != "0"
     )
 
 

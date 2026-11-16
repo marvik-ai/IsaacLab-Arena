@@ -68,9 +68,10 @@ export ARENA_G1_REVO2_URDF=$HOME/.cache/isaaclab_arena/g1_revo2/asset/g1_29dof_m
 `ARENA_G1_REVO2_URDF` is the original combined URDF. The whole-body controller derives its own Pinocchio copy from it
 (mimic and tip joints fixed) under `~/.cache/isaaclab_arena/g1_revo2/`.
 
-Optional: robot self-collisions are on for the Revo 2 embodiments, so the thumb and fingers collide with each other
-(the Dex3 robot runs with them off). `export ARENA_G1_REVO2_SELF_COLLISIONS=0` turns them off again, for example if the
-arms jitter against the torso.
+Robot self-collisions are off for the Revo 2 embodiments, as for the Dex3 robot. With them on, the robot falls over
+when the arms move on the GPU solver (a 35 cm arm swing tilts it by more than 80 degrees, against about 13 degrees with
+them off). The thumb and fingers then pass through each other but still collide with objects.
+`export ARENA_G1_REVO2_SELF_COLLISIONS=1` turns them on, at your own risk.
 
 With self-collisions on, the thumb is filtered against everything except the fingers of the same hand.
 `export ARENA_G1_REVO2_THUMB_FINGER_COLLISIONS=0` filters the thumb against the fingers too (finger-to-finger
