@@ -11,10 +11,10 @@
 #
 # Container/server path conventions:
 #   Host:      $MODELS_DIR/static_apple_n17_finetune/checkpoint-20000
-#   Docker:    /models/isaaclab_arena/static_apple_revo2/static_apple_revo2_finetune/checkpoint-20000
+#   Docker:    /models/isaaclab_arena/static_apple_revo2/static_apple_n17_finetune/checkpoint-20000
 #              (mount $MODELS_DIR -> /models, e.g. via `run_gr00t_server.sh -m $MODELS_DIR` or
 #               `-v $MODELS_DIR:/models` on raw `docker run`).
-model_path: /models/isaaclab_arena/static_apple_revo2/static_apple_revo2_finetune/checkpoint-20000
+model_path: /models/isaaclab_arena/static_apple_revo2/static_apple_n17_finetune/checkpoint-20000
 language_instruction: "move the apple to the plate"
 
 # Must match the diffusion head's action_horizon baked into the finetuned checkpoint
